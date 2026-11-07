@@ -14,7 +14,10 @@ class Base(DeclarativeBase):
 
 
 db = SQLAlchemy(app, model_class=Base)
-
+@app.context_processor
+def inject_user():
+    user = db.session.execute(select(User)).scalar()
+    return dict(user=user)
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -30,9 +33,11 @@ class Movie(db.Model):
 
 @app.route('/')
 def index():
-    user = db.session.execute(select(User)).scalar()
     movies = db.session.execute(select(Movie)).scalars().all()
-    return render_template('index.html', user=user, movies=movies)
+    return render_template('index.html', movies=movies)
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
 @app.cli.command('init-db')
 @click.option('--drop', is_flag=True, help='Create after drop.')
 def init_database(drop):
